@@ -1,16 +1,103 @@
 using UnityEngine;
+using UnityEngine.UI;
+using SFB;       // StandaloneFileBrowser
+using System.IO;
+using System.Collections.Generic;
 
 public class PresentationImagesHandler : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    [Header("UI Reference")]
+    public RawImage targetRawImage;       // Drag your RawImage here
+
+    [Header("Settings")]
+    public float imageHeight = 500f;      // RawImage height in pixels (width auto-adjusts to aspect)
+
+    private List<Texture2D> images = new List<Texture2D>();
+    private int currentIndex = 0;
+
+    /// <summary>
+    /// Call this to open folder picker and load all images inside
+    /// </summary>
+    public void OpenFolderAndLoadImages()
     {
-        
+        // Open folder dialog
+        string[] folders = StandaloneFileBrowser.OpenFolderPanel("Select Image Folder", "", false);
+        if (folders.Length > 0)
+        {
+            string folderPath = folders[0]; // take the first selected folder
+            LoadAllImagesFromFolder(folderPath);
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    /// <summary>
+    /// Loads all PNG/JPG images from a folder
+    /// </summary>
+    private void LoadAllImagesFromFolder(string folderPath)
     {
-        
+        images.Clear();
+        currentIndex = 0;
+
+        // Get all image files
+        string[] files = Directory.GetFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly);
+        foreach (string file in files)
+        {
+            string ext = Path.GetExtension(file).ToLower();
+            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg")
+            {
+                byte[] bytes = File.ReadAllBytes(file);
+                Texture2D tex = new Texture2D(2, 2);
+                if (tex.LoadImage(bytes))
+                {
+                    images.Add(tex);
+                }
+            }
+        }
+
+        if (images.Count > 0)
+        {
+            DisplayImage(currentIndex);
+        }
+        else
+        {
+            Debug.LogWarning("No images found in folder: " + folderPath);
+        }
+    }
+
+    /// <summary>
+    /// Display image at index
+    /// </summary>
+    private void DisplayImage(int index)
+    {
+        if (images.Count == 0 || index < 0 || index >= images.Count) return;
+
+        Texture2D tex = images[index];
+        targetRawImage.texture = tex;
+
+        // Adjust RawImage to match aspect ratio
+        RectTransform rt = targetRawImage.GetComponent<RectTransform>();
+        float aspect = (float)tex.width / tex.height;
+        rt.sizeDelta = new Vector2(imageHeight * aspect, imageHeight);
+    }
+
+    /// <summary>
+    /// Call this to show the next image (slide)
+    /// </summary>
+    public void NextImage()
+    {
+        if (images.Count == 0) return;
+
+        currentIndex = (currentIndex + 1) % images.Count;
+        DisplayImage(currentIndex);
+    }
+
+    /// <summary>
+    /// Optional: previous image
+    /// </summary>
+    public void PreviousImage()
+    {
+        if (images.Count == 0) return;
+
+        currentIndex = (currentIndex - 1 + images.Count) % images.Count;
+        DisplayImage(currentIndex);
     }
 }
