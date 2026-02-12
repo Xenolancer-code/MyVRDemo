@@ -49,6 +49,7 @@ public class TVButtonsHandler : MonoBehaviour
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, buttonLayer))
         {
+            Debug.Log("Click");
             VRButton3D button = hit.collider.GetComponent<VRButton3D>();
             if (button != null)
             {
